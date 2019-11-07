@@ -1,19 +1,129 @@
-use crate::node::Node;
+use inflector::Inflector;
+use std::fs;
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 
-mod node;
-mod hierarchy_finder;
+pub type Name = String;
+pub type Title = String;
+pub type Children = Vec<Node>;
+
+#[derive(Debug)]
+pub enum Node {
+    Folder(Name, Title, Children),
+    File(Name, Title),
+}
 
 fn main() {
-    let tree = Node::Folder("root", vec![
-        Node::Folder(
-            "files",
-            vec![
-                Node::File("file1.md", "Title 1"),
-                Node::File("file2.md", "Title 2"),
-            ]
-        ),
-        Node::File("landing.md", "Landing page"),
-    ]);
+    let root = PathBuf::from("example");
+    let tree = get_hierarchy(root).unwrap();
 
-    println!("tree = {:#?}", tree);
+    print_hierarchy(tree);
+}
+
+fn print_hierarchy(tree: Node) {
+    let mut rows = vec!["# SUMMARY".to_string(), "".to_string()];
+
+    hierarchy_to_md(&tree, ".", 0, &mut rows);
+
+    println!("{}", rows.join("\n"));
+}
+
+fn hierarchy_to_md(tree: &Node, path: &str, depth: usize, output: &mut Vec<String>) {
+    let indentation = match depth {
+        0 => None,
+        n => Some(String::from_utf8(vec![b' '; (n - 1) * 4]).unwrap()),
+    };
+
+    match tree {
+        Node::File(name, title) => {
+            if indentation.is_some()
+                && name != "SUMMARY.md"
+                && name != "landing.md"
+                && name.ends_with(".md")
+            {
+                output.push(format!(
+                    "{}- [{}]({}/{})",
+                    &indentation.unwrap(),
+                    &title,
+                    &path,
+                    &name
+                ));
+            }
+        }
+        Node::Folder(name, title, children) => {
+            if indentation.is_some() {
+                output.push(format!(
+                    "{}- [{}]({}/{}/landing.md)",
+                    &indentation.unwrap(),
+                    &title,
+                    &path,
+                    &name
+                ));
+            }
+
+            let path = match depth {
+                0 => ".".to_string(),
+                _ => format!("{}/{}", path, name),
+            };
+
+            for node in children {
+                hierarchy_to_md(&node, &path, depth + 1, output);
+            }
+        }
+    }
+}
+
+fn get_hierarchy(parent: PathBuf) -> Option<Node> {
+    let parent_name = parent.file_name()?.to_str()?.to_string();
+
+    let mut children = vec![];
+
+    for entry in fs::read_dir(&parent).ok()? {
+        let entry = entry.ok()?;
+        let path = entry.path();
+
+        let metadata = fs::metadata(&path).ok()?;
+
+        if metadata.is_dir() {
+            children.push(get_hierarchy(path).unwrap());
+        } else {
+            let file_name = path.file_name()?.to_str()?.to_string();
+            let title = get_title(path)
+                .or(Some(parent_name.to_title_case()))
+                .unwrap();
+
+            children.push(Node::File(file_name.to_string(), title))
+        }
+    }
+
+    let title = get_title(parent.join("landing.md"))
+        .or(Some(parent_name.to_title_case()))
+        .unwrap();
+
+    let tree = Node::Folder(parent_name, title, children);
+    Some(tree)
+}
+
+fn get_title(path: PathBuf) -> Option<String> {
+    let file = fs::File::open(&path).ok()?;
+    let mut buffer = BufReader::new(file);
+
+    let mut line = String::new();
+
+    let whitelist: Vec<char> =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?-+"
+            .chars()
+            .collect();
+
+    while line.is_empty() {
+        buffer.read_line(&mut line).ok()?;
+        line = line
+            .replace("_", " ")
+            .trim()
+            .chars()
+            .filter(|it| whitelist.contains(it))
+            .collect();
+    }
+
+    Some(line.to_title_case())
 }
