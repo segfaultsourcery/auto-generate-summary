@@ -19,7 +19,9 @@ Currently, the example folder results in this:
 
 - [Landscaping On The Moon](./chapter_1/landing.md)
     - [If Dogs Had More Knees](./chapter_1/sub_chapter_2/landing.md)
+    - [Suggestions Needed](./chapter_1/read-this-please.md)
     - [Bees Do They Eat Lunch](./chapter_1/sub_chapter_1/landing.md)
+        - [Blah Blah](./chapter_1/sub_chapter_1/some-other-page.md)
     - [Empty Folder](./chapter_1/empty_folder/landing.md)
 - [My Favorite Boat Flavor](./chapter_2/landing.md)
     - [A Deep Dive Into Nonsense](./chapter_2/sub_chapter_1/landing.md)
