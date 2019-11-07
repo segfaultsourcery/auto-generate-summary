@@ -36,28 +36,20 @@ fn hierarchy_to_md(tree: &Node, path: &str, depth: usize, output: &mut Vec<Strin
 
     match tree {
         Node::File(name, title) => {
-            if indentation.is_some()
-                && name != "SUMMARY.md"
-                && name != "landing.md"
-                && name.ends_with(".md")
-            {
-                output.push(format!(
-                    "{}- [{}]({}/{})",
-                    &indentation.unwrap(),
-                    &title,
-                    &path,
-                    &name
-                ));
+            if let Some(indentation) = indentation {
+                if name != "SUMMARY.md" && name != "landing.md" && name.ends_with(".md") {
+                    output.push(format!(
+                        "{}- [{}]({}/{})",
+                        &indentation, &title, &path, &name
+                    ));
+                }
             }
         }
         Node::Folder(name, title, children) => {
-            if indentation.is_some() {
+            if let Some(indentation) = indentation {
                 output.push(format!(
                     "{}- [{}]({}/{}/landing.md)",
-                    &indentation.unwrap(),
-                    &title,
-                    &path,
-                    &name
+                    &indentation, &title, &path, &name
                 ));
             }
 
@@ -87,9 +79,13 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
         if metadata.is_dir() {
             children.push(get_hierarchy(path).unwrap());
         } else {
+            if !path.ends_with(".md") {
+                continue;
+            }
+
             let file_name = path.file_name()?.to_str()?.to_string();
             let title = get_title(path)
-                .or(Some(parent_name.to_title_case()))
+                .or_else(|| Some(parent_name.to_title_case()))
                 .unwrap();
 
             children.push(Node::File(file_name.to_string(), title))
@@ -97,7 +93,7 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
     }
 
     let title = get_title(parent.join("landing.md"))
-        .or(Some(parent_name.to_title_case()))
+        .or_else(|| Some(parent_name.to_title_case()))
         .unwrap();
 
     let tree = Node::Folder(parent_name, title, children);
@@ -117,6 +113,11 @@ fn get_title(path: PathBuf) -> Option<String> {
 
     while line.is_empty() {
         buffer.read_line(&mut line).ok()?;
+
+        if line.is_empty() {
+            break;
+        }
+
         line = line
             .replace("_", " ")
             .trim()
