@@ -125,7 +125,9 @@ fn get_title(path: PathBuf) -> Option<String> {
             .chars()
             .filter(|it| whitelist.contains(it))
             .collect();
+
+        line = line.trim().to_string();
     }
 
-    Some(line.to_title_case())
+    Some(line)
 }

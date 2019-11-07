@@ -17,12 +17,10 @@ Currently, the example folder results in this:
 ```markdown
 # SUMMARY
 
-- [Landscaping On The Moon](./chapter_1/landing.md)
-    - [If Dogs Had More Knees](./chapter_1/sub_chapter_2/landing.md)
-    - [Suggestions Needed](./chapter_1/read-this-please.md)
-    - [Bees Do They Eat Lunch](./chapter_1/sub_chapter_1/landing.md)
-        - [Blah Blah](./chapter_1/sub_chapter_1/some-other-page.md)
-    - [Empty Folder](./chapter_1/empty_folder/landing.md)
-- [My Favorite Boat Flavor](./chapter_2/landing.md)
-    - [A Deep Dive Into Nonsense](./chapter_2/sub_chapter_1/landing.md)
+- [Chapter 1 title parsed from markdown file](./chapter_1/landing.md)
+    - [Section 1.1 title](./chapter_1/section_1_1.md)
+    - [Section 1.2 title](./chapter_1/section_1_2.md)
+    - [Section 1.3 title](./chapter_1/section_1_3.md)
+- [Chapter 2 title](./chapter_2/landing.md)
+    - [Section 2.1 title](./chapter_2/section_2_1.md)
 ```
