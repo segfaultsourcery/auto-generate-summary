@@ -1,4 +1,3 @@
-use inflector::Inflector;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -86,7 +85,7 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
             }
 
             let title = get_title(path)
-                .or_else(|| Some(parent_name.to_title_case()))
+                .or_else(|| Some(parent_name.to_owned()))
                 .unwrap();
 
             children.push(Node::File(file_name.to_string(), title))
@@ -94,7 +93,7 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
     }
 
     let title = get_title(parent.join("landing.md"))
-        .or_else(|| Some(parent_name.to_title_case()))
+        .or_else(|| Some(parent_name.to_owned()))
         .unwrap();
 
     let tree = Node::Folder(parent_name, title, children);
