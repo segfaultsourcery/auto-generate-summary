@@ -79,11 +79,12 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
         if metadata.is_dir() {
             children.push(get_hierarchy(path).unwrap());
         } else {
-            if !path.ends_with(".md") {
+            let file_name = path.file_name()?.to_str()?.to_string();
+
+            if !file_name.ends_with(".md") {
                 continue;
             }
 
-            let file_name = path.file_name()?.to_str()?.to_string();
             let title = get_title(path)
                 .or_else(|| Some(parent_name.to_title_case()))
                 .unwrap();
