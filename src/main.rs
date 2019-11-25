@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -5,12 +6,6 @@ use std::path::PathBuf;
 pub type Name = String;
 pub type Title = String;
 pub type Children = Vec<Node>;
-
-#[derive(Debug)]
-pub enum Node {
-    Folder(Name, Title, Children),
-    File(Name, Title),
-}
 
 fn main() {
     let root = PathBuf::from("example");
@@ -22,7 +17,7 @@ fn main() {
 fn print_hierarchy(tree: Node) {
     let mut rows = vec!["# SUMMARY".to_string(), "".to_string()];
 
-    hierarchy_to_md(&tree, ".", 0, &mut rows);
+    hierarchy_to_md(&tree, "", 0, &mut rows);
 
     println!("{}", rows.join("\n"));
 }
@@ -84,23 +79,25 @@ fn get_hierarchy(parent: PathBuf) -> Option<Node> {
                 continue;
             }
 
-            let title = get_title(path)
-                .or_else(|| Some(parent_name.to_owned()))
+            let title = get_title(&path)
+                .or_else(|| Some(path.file_name()?.to_str()?.to_string()))
                 .unwrap();
 
             children.push(Node::File(file_name.to_string(), title))
         }
     }
 
-    let title = get_title(parent.join("landing.md"))
+    let title = get_title(&parent.join("landing.md"))
         .or_else(|| Some(parent_name.to_owned()))
         .unwrap();
+
+    children.sort();
 
     let tree = Node::Folder(parent_name, title, children);
     Some(tree)
 }
 
-fn get_title(path: PathBuf) -> Option<String> {
+fn get_title(path: &PathBuf) -> Option<String> {
     let file = fs::File::open(&path).ok()?;
     let mut buffer = BufReader::new(file);
 
@@ -112,9 +109,9 @@ fn get_title(path: PathBuf) -> Option<String> {
             .collect();
 
     while line.is_empty() {
-        buffer.read_line(&mut line).ok()?;
+        let result = buffer.read_line(&mut line);
 
-        if line.is_empty() {
+        if let Ok(0) = result {
             break;
         }
 
@@ -128,5 +125,46 @@ fn get_title(path: PathBuf) -> Option<String> {
         line = line.trim().to_string();
     }
 
-    Some(line)
+    if line.trim().is_empty() {
+        None
+    } else {
+        Some(line)
+    }
 }
+
+// region Node
+
+#[derive(Debug, Eq)]
+pub enum Node {
+    Folder(Name, Title, Children),
+    File(Name, Title),
+}
+
+impl Node {
+    fn title(&self) -> &str {
+        match self {
+            Node::Folder(_, title, _) => title,
+            Node::File(_, title) => title,
+        }
+    }
+}
+
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.title().cmp(other.title())
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.title().eq(other.title())
+    }
+}
+
+// endregion
